@@ -538,7 +538,11 @@ async function joinDailyRoom(roomName, type){
     await callFrame.join({
       url, userName: myName,
       audioSource: true,
-      videoSource: type==='video'
+      videoSource: type==='video',
+      subscribeToTracksAutomatically: true,
+    });
+    await callFrame.setLocalAudio(true);
+    if(type==='video') await callFrame.setLocalVideo(true);
     });
 
     // Show local video
