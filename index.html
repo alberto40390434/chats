@@ -438,7 +438,7 @@ window.startCall = async type => {
   if(callFrame){ alert('Already in a call!'); return; }
   callType=type;
   currentCallId=`call_${Date.now()}_${userId}`;
-  const roomName=`chat-${currentChannel}`;
+  const roomName=`${currentChannel}chats`;
 
   // Signal channel via Firebase
   await set(ref(db,`calls/${currentChannel}/active`),{
