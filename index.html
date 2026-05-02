@@ -551,8 +551,8 @@ async function joinDailyRoom(roomName, type){
     }
 
   } catch(err){
-    console.error('Call error:',err);
-    const msg = err.message||String(err);
+    console.error('Call error:', JSON.stringify(err), err);
+    const msg = err.message || err.errorMsg || (typeof err === 'object' ? JSON.stringify(err) : String(err));
     alert(`Could not start call: ${msg}\n\nTip: Make sure a Daily.co room named "${roomName}" exists at ${DAILY_DOMAIN}.daily.co and that you've allowed mic/camera.`);
     endCall();
   }
