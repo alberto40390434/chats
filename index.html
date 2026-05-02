@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chat App</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<script crossorigin src="https://unpkg.com/@daily-co/daily-js@0.70.0/dist/daily-iframe.js"></script>
+<script crossorigin src="https://unpkg.com/@daily-co/daily-js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#fff;--bg2:#f7f7f5;--bg3:#efefec;--sidebar-bg:#f2f1ee;--text:#111;--text2:#666;--text3:#999;--border:#e4e3de;--accent:#2563eb;--accent-light:#eff4ff;--bubble-out:#2563eb;--bubble-out-text:#fff;--bubble-in:#efefec;--bubble-in-text:#111;--font:'DM Sans',sans-serif;--radius:14px;--input-bg:#f2f1ee;}
@@ -535,12 +535,6 @@ async function joinDailyRoom(roomName, type){
     });
     callFrame.on('error', e => { console.error('Daily error',e); endCall(); });
 
-    await callFrame.join({
-      url, userName: myName,
-      audioSource: true,
-      videoSource: type==='video',
-      subscribeToTracksAutomatically: true,
-    });
     await callFrame.join({
       url, userName: myName,
       audioSource: true,
