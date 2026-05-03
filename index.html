@@ -177,6 +177,26 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);height:100vh
 .mobile-menu-btn{display:none;background:none;border:none;cursor:pointer;font-size:20px;color:var(--text2);padding:4px 6px;border-radius:6px}
 .mobile-overlay{display:none;position:fixed;inset:0;z-index:499;background:rgba(0,0,0,.3)}
 .mobile-overlay.show{display:block}
+/* CHANGELOG POPUP */
+.changelog-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:10000;opacity:0;pointer-events:none;transition:opacity .2s}
+.changelog-overlay.open{opacity:1;pointer-events:all}
+.changelog-box{background:var(--bg);border:1px solid var(--border);border-radius:18px;width:340px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;transform:scale(.95);transition:transform .2s}
+.changelog-overlay.open .changelog-box{transform:scale(1)}
+.changelog-top{padding:20px 20px 0}
+.changelog-version{display:inline-flex;align-items:center;gap:6px;background:var(--accent-light);color:var(--accent);font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;letter-spacing:.04em;margin-bottom:10px}
+.changelog-title{font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px}
+.changelog-date{font-size:12px;color:var(--text3);margin-bottom:14px}
+.changelog-scroll{padding:0 20px 16px;overflow-y:auto;flex:1}
+.changelog-section{margin-bottom:14px}
+.changelog-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px;display:flex;align-items:center;gap:5px}
+.changelog-section-title.new{color:#22c55e}
+.changelog-section-title.fixed{color:#f59e0b}
+.changelog-section-title.removed{color:#ef4444}
+.changelog-item{display:flex;align-items:flex-start;gap:7px;margin-bottom:5px;font-size:13px;color:var(--text2);line-height:1.4}
+.changelog-item::before{content:'•';flex-shrink:0;margin-top:1px}
+.changelog-footer{padding:14px 20px;border-top:1px solid var(--border);flex-shrink:0}
+.changelog-close{width:100%;padding:10px;background:var(--accent);border:none;border-radius:10px;color:#fff;font-family:var(--font);font-size:14px;font-weight:500;cursor:pointer}
+.changelog-close:hover{opacity:.87}
 @media(max-width:600px){
   .sidebar{position:fixed;left:-220px;top:0;bottom:0;z-index:500}
   .sidebar.open{left:0;box-shadow:4px 0 24px rgba(0,0,0,.18)}
@@ -186,6 +206,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);height:100vh
   .participant-box.small{width:44vw}
   .ctrl-btn{width:44px;height:44px;font-size:17px}
   .ctrl-btn.end-btn{width:52px;height:52px}
+  .changelog-box{width:92vw}
 }
 </style>
 </head>
@@ -250,6 +271,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);height:100vh
   <div class="members-panel" id="membersPanel"></div>
 </div>
 
+<!-- Incoming call -->
 <div class="incoming-call-banner" id="incomingCallBanner">
   <div class="inc-title">📲 Incoming Call</div>
   <div class="inc-avatar-wrap">
@@ -264,6 +286,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);height:100vh
   </div>
 </div>
 
+<!-- Call overlay -->
 <div class="call-overlay" id="callOverlay">
   <div class="participants-grid" id="participantsGrid"></div>
   <div class="call-info">
@@ -278,6 +301,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);height:100vh
   </div>
 </div>
 
+<!-- Settings -->
 <div class="modal-overlay" id="settingsModal" onclick="handleOverlayClick(event)">
   <div class="modal">
     <div class="modal-header">
@@ -289,11 +313,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);height:100vh
       </div>
     </div>
     <div class="modal-body">
-      <!-- PROFILE -->
       <div class="tab-panel active" id="tab-profile">
         <div class="setting-group">
           <span class="setting-label">Display Name</span>
-          <input class="name-input" id="nameChangeInput" type="text" maxlength="20" placeholder="Your nickname..."/>
+          <input class="name-input" id="nameChangeInput" type="text" maxlength="20" placeholder="Your nickname..." onkeydown="if(event.key==='Enter')saveName()"/>
           <button class="save-name-btn" onclick="saveName()">Save Name</button>
           <div class="name-saved-msg" id="nameSavedMsg"></div>
         </div>
@@ -302,7 +325,6 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);height:100vh
           <div class="color-swatches" id="colorSwatches"></div>
         </div>
       </div>
-      <!-- THEMES -->
       <div class="tab-panel" id="tab-themes">
         <div class="setting-group">
           <span class="setting-label">Light</span>
@@ -336,7 +358,6 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);height:100vh
           </div>
         </div>
       </div>
-      <!-- CREDITS -->
       <div class="tab-panel" id="tab-credits">
         <div class="credits-block">
           <div class="credit-card">
@@ -369,6 +390,37 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);height:100vh
   </div>
 </div>
 
+<!-- Changelog popup -->
+<div class="changelog-overlay" id="changelogOverlay">
+  <div class="changelog-box">
+    <div class="changelog-top">
+      <div class="changelog-version">🚀 v1.0</div>
+      <div class="changelog-title">What's New</div>
+      <div class="changelog-date">May 2026 · Initial Release</div>
+    </div>
+    <div class="changelog-scroll">
+      <div class="changelog-section">
+        <div class="changelog-section-title new">✨ New Features</div>
+        <div class="changelog-item">Real-time chat with multiple channels</div>
+        <div class="changelog-item">Voice & video calling powered by Daily.co</div>
+        <div class="changelog-item">Screen sharing on desktop</div>
+        <div class="changelog-item">16 themes including Light, Dark, and Special categories</div>
+        <div class="changelog-item">Keep me logged in with saved nickname & color</div>
+        <div class="changelog-item">Change your display name from Settings</div>
+        <div class="changelog-item">Avatar shown when camera is off in calls</div>
+        <div class="changelog-item">Participant names shown in call overlay</div>
+        <div class="changelog-item">Typing indicators and online presence</div>
+        <div class="changelog-item">Emoji picker</div>
+        <div class="changelog-item">Mobile-friendly sidebar with hamburger menu</div>
+        <div class="changelog-item">Mute, camera toggle, and end call controls</div>
+      </div>
+    </div>
+    <div class="changelog-footer">
+      <button class="changelog-close" onclick="closeChangelog()">Let's go! 🎉</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, push, onChildAdded, onValue, set, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
@@ -385,6 +437,9 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+
+// ── VERSION — bump this string each release ──
+const APP_VERSION = 'v1.0';
 
 const DAILY_DOMAIN = 'schoolchats';
 const channels = ['general','random','tech-talk','off-topic'];
@@ -412,7 +467,19 @@ const nowTime = () => {
   return `${h}:${m} ${d.getHours()<12?'AM':'PM'}`;
 };
 
-// REMEMBER ME
+// ── CHANGELOG ──
+function checkChangelog(){
+  const seen = localStorage.getItem('seenVersion');
+  if(seen !== APP_VERSION){
+    document.getElementById('changelogOverlay').classList.add('open');
+  }
+}
+window.closeChangelog=()=>{
+  localStorage.setItem('seenVersion', APP_VERSION);
+  document.getElementById('changelogOverlay').classList.remove('open');
+};
+
+// ── REMEMBER ME ──
 function checkSavedLogin(){
   const saved=localStorage.getItem('chatLogin');
   if(saved){ try{ const {name,bg,fg,idx}=JSON.parse(saved); myName=name;myBg=bg;myFg=fg;selectedColorIdx=idx||0; launchApp(); }catch(e){ localStorage.removeItem('chatLogin'); } }
@@ -423,7 +490,7 @@ function saveLogin(){
 }
 window.logout=()=>{ localStorage.removeItem('chatLogin'); location.reload(); };
 
-// LOGIN
+// ── LOGIN ──
 function renderLoginColors(){
   document.getElementById('loginColors').innerHTML=avatarColors.map((c,i)=>
     `<div style="width:26px;height:26px;border-radius:50%;background:${c.bg};border:2px solid ${i===0?c.fg:'transparent'};cursor:pointer" onclick="selectLoginColor(${i})"></div>`
@@ -447,9 +514,10 @@ function launchApp(){
   document.getElementById('myAvatar').style.color=myFg;
   startPresence();renderChannels();renderColorSwatches();
   listenToChannel(currentChannel);listenToOnlineUsers();listenForIncomingCalls();
+  checkChangelog();
 }
 
-// PRESENCE
+// ── PRESENCE ──
 const updatePresence=()=>set(ref(db,`presence/${currentChannel}/${userId}`),{name:myName,bg:myBg,fg:myFg,ts:Date.now()});
 const removePresence=()=>remove(ref(db,`presence/${currentChannel}/${userId}`));
 function startPresence(){updatePresence();setInterval(updatePresence,15000);window.addEventListener('beforeunload',removePresence);}
@@ -462,7 +530,7 @@ function listenToOnlineUsers(){
   });
 }
 
-// CHANNELS
+// ── CHANNELS ──
 function renderChannels(){
   document.getElementById('channelList').innerHTML=channels.map(c=>
     `<div class="channel ${c===currentChannel?'active':''}" onclick="switchChannel('${c}')">
@@ -477,7 +545,7 @@ window.switchChannel=ch=>{
   renderChannels();updatePresence();listenToChannel(ch);listenToOnlineUsers();closeMobileSidebar();
 };
 
-// MESSAGES
+// ── MESSAGES ──
 function listenToChannel(ch){
   if(messageListeners[ch])return;
   messageListeners[ch]=true;
@@ -511,7 +579,7 @@ window.sendMessage=()=>{
   input.value='';autoResize(input);clearTypingIndicator();
 };
 
-// TYPING
+// ── TYPING ──
 window.handleTyping=()=>{
   set(ref(db,`typing/${currentChannel}/${userId}`),{name:myName,ts:Date.now()});
   clearTimeout(typingTimer);typingTimer=setTimeout(clearTypingIndicator,2000);
@@ -526,7 +594,7 @@ setTimeout(()=>{
   });
 },500);
 
-// MEMBERS
+// ── MEMBERS ──
 function renderMembers(){
   const users=Object.values(onlineUsers);
   document.getElementById('membersPanel').innerHTML=`<h3>Online — ${users.length}</h3>`+
@@ -539,7 +607,6 @@ function renderMembers(){
 // ══════════════════════════════
 // CALLING
 // ══════════════════════════════
-
 window.startCall=async type=>{
   if(callFrame){alert('Already in a call!');return;}
   callType=type;
@@ -566,7 +633,6 @@ function listenForIncomingCalls(){
     if(data.status==='ended'&&callFrame)endCall();
   });
 }
-
 function showIncomingBanner(data){
   document.getElementById('incCallerName').textContent=data.callerName;
   document.getElementById('incCallType').textContent=data.type==='video'?'📹 Video Call':'📞 Voice Call';
@@ -575,7 +641,6 @@ function showIncomingBanner(data){
   document.getElementById('incomingCallBanner').classList.add('show');
 }
 function hideIncomingBanner(){document.getElementById('incomingCallBanner').classList.remove('show');incomingCallData=null;}
-
 window.acceptCall=async()=>{
   if(!incomingCallData)return;
   const data=incomingCallData;hideIncomingBanner();
@@ -590,7 +655,6 @@ window.acceptCall=async()=>{
 };
 window.declineCall=()=>hideIncomingBanner();
 
-// PARTICIPANT BOXES
 function addParticipantBox(id,name,bg,fg,isVideo){
   callParticipants[id]={name,bg,fg,videoOn:false,audioOn:true};
   renderParticipantBoxes();
@@ -635,12 +699,7 @@ function setVideoTrack(id,track){
   const box=document.getElementById(`pbox-${id}`);
   if(!box)return;
   let vid=box.querySelector('video');
-  if(!vid){
-    vid=document.createElement('video');
-    vid.autoplay=true;vid.playsInline=true;
-    if(id==='local')vid.muted=true;
-    box.prepend(vid);
-  }
+  if(!vid){vid=document.createElement('video');vid.autoplay=true;vid.playsInline=true;if(id==='local')vid.muted=true;box.prepend(vid);}
   vid.srcObject=new MediaStream([track]);
   vid.play().catch(()=>{});
 }
@@ -652,50 +711,38 @@ function clearVideoTrack(id){
   const box=document.getElementById(`pbox-${id}`);
   if(box){const vid=box.querySelector('video');if(vid)vid.srcObject=null;}
 }
-
-// JOIN DAILY
 async function joinDailyRoom(roomName,type){
   if(callFrame){try{await callFrame.leave();callFrame.destroy();}catch(e){}callFrame=null;}
   const url=`https://${DAILY_DOMAIN}.daily.co/${roomName}`;
   try{
     callFrame=window.DailyIframe.createCallObject({audioSource:true,videoSource:type==='video'});
-
     callFrame.on('track-started',e=>{
-      const p=e.participant;
-      const sid=p.local?'local':p.session_id;
+      const p=e.participant,sid=p.local?'local':p.session_id;
       if(e.track.kind==='audio'&&!p.local){
         let audio=document.getElementById(`audio-${sid}`);
         if(!audio){audio=document.createElement('audio');audio.id=`audio-${sid}`;audio.autoplay=true;document.body.appendChild(audio);}
         const stream=audio.srcObject instanceof MediaStream?audio.srcObject:new MediaStream();
         stream.addTrack(e.track);audio.srcObject=stream;
       }
-      if(e.track.kind==='video') setVideoTrack(sid,e.track);
+      if(e.track.kind==='video')setVideoTrack(sid,e.track);
     });
-
     callFrame.on('track-stopped',e=>{
       const sid=e.participant.local?'local':e.participant.session_id;
       if(e.track.kind==='video')clearVideoTrack(sid);
     });
-
     callFrame.on('participant-joined',e=>{
-      const p=e.participant;
-      if(p.local)return;
+      const p=e.participant;if(p.local)return;
       document.getElementById('callStatusText').textContent='Connected';
       startCallTimer();
       const pd=Object.values(onlineUsers).find(u=>u.name===p.user_name);
       addParticipantBox(p.session_id,p.user_name||'Guest',pd?.bg||'#dbeafe',pd?.fg||'#1d4ed8',type==='video');
       if(p.tracks?.video?.persistentTrack)setVideoTrack(p.session_id,p.tracks.video.persistentTrack);
     });
-
     callFrame.on('participant-updated',e=>{
-      const p=e.participant;
-      if(p.local)return;
+      const p=e.participant;if(p.local)return;
       const sid=p.session_id;
-      if(p.tracks?.video?.state==='playable'&&p.tracks?.video?.persistentTrack){
-        setVideoTrack(sid,p.tracks.video.persistentTrack);
-      } else if(p.tracks?.video?.state==='off'||p.tracks?.video?.state==='interrupted'){
-        clearVideoTrack(sid);
-      }
+      if(p.tracks?.video?.state==='playable'&&p.tracks?.video?.persistentTrack){setVideoTrack(sid,p.tracks.video.persistentTrack);}
+      else if(p.tracks?.video?.state==='off'||p.tracks?.video?.state==='interrupted'){clearVideoTrack(sid);}
       if(p.tracks?.screenVideo?.state==='playable'&&p.tracks?.screenVideo?.persistentTrack){
         if(!callParticipants[sid+'-screen'])addParticipantBox(sid+'-screen',p.user_name+' screen','#1e293b','#94a3b8',true);
         setVideoTrack(sid+'-screen',p.tracks.screenVideo.persistentTrack);
@@ -710,11 +757,9 @@ async function joinDailyRoom(roomName,type){
         if(tag)tag.textContent=callParticipants[sid].name+(!callParticipants[sid].audioOn?' 🔇':'');
       }
     });
-
     callFrame.on('participant-left',e=>{
       const sid=e.participant.session_id;
-      delete callParticipants[sid];
-      delete callParticipants[sid+'-screen'];
+      delete callParticipants[sid];delete callParticipants[sid+'-screen'];
       renderParticipantBoxes();
       document.getElementById(`audio-${sid}`)?.remove();
       if(Object.keys(callParticipants).filter(k=>k!=='local').length===0){
@@ -722,30 +767,24 @@ async function joinDailyRoom(roomName,type){
         setTimeout(endCall,2000);
       }
     });
-
     callFrame.on('error',e=>{console.error('Daily error',e);endCall();});
-
     await callFrame.join({url,userName:myName});
-
     if(type==='video'){
       const parts=callFrame.participants();
       const localVid=parts.local?.tracks?.video?.persistentTrack;
       if(localVid)setVideoTrack('local',localVid);
     }
-
   }catch(err){
     console.error('Call error:',err);
     alert(`Could not start call: ${err.message||JSON.stringify(err)}`);
     endCall();
   }
 }
-
 function showCallOverlay(type){
   document.getElementById('callOverlay').classList.add('show');
   document.getElementById('camBtn').style.display=type==='video'?'flex':'none';
   document.getElementById('screenBtn').style.display=(!isMobile&&type==='video')?'flex':'none';
 }
-
 window.endCall=()=>{
   if(currentCallId){
     set(ref(db,`calls/${currentChannel}/active/status`),'ended')
@@ -761,7 +800,6 @@ window.endCall=()=>{
   document.querySelectorAll('audio[id^="audio-"]').forEach(a=>a.remove());
   updateCtrlUI();
 };
-
 function startCallTimer(){
   if(callTimerInterval)return;
   const el=document.getElementById('callTimer');
@@ -772,26 +810,13 @@ function startCallTimer(){
     el.textContent=`${m}:${s}`;
   },1000);
 }
-
-window.toggleMute=()=>{
-  if(!callFrame)return;
-  isMuted=!isMuted;
-  callFrame.setLocalAudio(!isMuted);
-  updateCtrlUI();
-};
+window.toggleMute=()=>{if(!callFrame)return;isMuted=!isMuted;callFrame.setLocalAudio(!isMuted);updateCtrlUI();};
 window.toggleCamera=()=>{
   if(!callFrame)return;
   isCamOff=!isCamOff;
   callFrame.setLocalVideo(!isCamOff);
-  if(isCamOff){
-    clearVideoTrack('local');
-  } else {
-    setTimeout(()=>{
-      const parts=callFrame.participants();
-      const t=parts.local?.tracks?.video?.persistentTrack;
-      if(t)setVideoTrack('local',t);
-    },500);
-  }
+  if(isCamOff){clearVideoTrack('local');}
+  else{setTimeout(()=>{const parts=callFrame.participants();const t=parts.local?.tracks?.video?.persistentTrack;if(t)setVideoTrack('local',t);},500);}
   updateCtrlUI();
 };
 window.toggleScreenShare=async()=>{
@@ -809,30 +834,27 @@ function updateCtrlUI(){
   sb.classList.toggle('screen-active',isSharingScreen);
 }
 
-// SETTINGS TABS
+// ── SETTINGS ──
 window.switchTab=(tab,btn)=>{
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('tab-'+tab).classList.add('active');
   btn.classList.add('active');
 };
-
-// NAME CHANGE
 window.saveName=()=>{
   const input=document.getElementById('nameChangeInput');
   const newName=input.value.trim();
-  if(!newName||newName===myName)return;
+  if(!newName)return;
   myName=newName;
   document.getElementById('myNameDisplay').textContent=myName;
   document.getElementById('myAvatar').textContent=getInitials(myName);
+  // Update saved login
   const saved=localStorage.getItem('chatLogin');
   if(saved){try{const d=JSON.parse(saved);d.name=myName;localStorage.setItem('chatLogin',JSON.stringify(d));}catch(e){}}
   updatePresence();
   document.getElementById('nameSavedMsg').textContent='✅ Name saved!';
-  setTimeout(()=>document.getElementById('nameSavedMsg').textContent='',2000);
+  setTimeout(()=>document.getElementById('nameSavedMsg').textContent='',2500);
 };
-
-// SETTINGS
 window.openSettings=()=>{
   document.getElementById('nameChangeInput').value=myName;
   document.getElementById('nameSavedMsg').textContent='';
@@ -850,6 +872,9 @@ window.setAvatarColor=idx=>{
   document.getElementById('myAvatar').style.background=myBg;
   document.getElementById('myAvatar').style.color=myFg;
   renderColorSwatches();
+  // Update saved login
+  const saved=localStorage.getItem('chatLogin');
+  if(saved){try{const d=JSON.parse(saved);d.bg=myBg;d.fg=myFg;d.idx=idx;localStorage.setItem('chatLogin',JSON.stringify(d));}catch(e){}}
 };
 function renderColorSwatches(){
   document.getElementById('colorSwatches').innerHTML=avatarColors.map((c,i)=>
@@ -857,7 +882,7 @@ function renderColorSwatches(){
   ).join('');
 }
 
-// EMOJI
+// ── EMOJI ──
 window.toggleEmojiPicker=()=>{
   emojiOpen=!emojiOpen;
   const p=document.getElementById('emojiPicker');
