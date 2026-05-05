@@ -371,7 +371,7 @@ const EMAILJS_TEMPLATE = "template_vttzaoa";
 const EMAILJS_KEY      = "_0xvmztDM9lb75mZv";
 const ADMIN_PASS       = "A00497613t1";
 // Jitsi: use the public meet.jit.si server — no account needed, never blocked
-const JITSI_DOMAIN     = "meet.jit.si";
+const url=`https://${JITSI_DOMAIN}/${room}#config.prejoinPageEnabled=false&`+configOverrides.slice(1);
 
 emailjs.init(EMAILJS_KEY);
 const app = initializeApp(firebaseConfig);
