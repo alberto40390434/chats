@@ -410,10 +410,12 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);height:100vh
       <button class="settings-btn" style="margin-left:auto" onclick="closeAdmin()">✕</button>
     </div>
     <div class="admin-tabs">
-      <button class="admin-tab active" onclick="switchAdminTab('overview',this)">Overview</button>
-      <button class="admin-tab" onclick="switchAdminTab('users',this)">Users</button>
-      <button class="admin-tab" onclick="switchAdminTab('messages',this)">Messages</button>
-      <button class="admin-tab" onclick="switchAdminTab('channels',this)">Channels</button>
+      <button class="admin-tab active" onclick="switchAdminTab('overview',this)">📊 Overview</button>
+      <button class="admin-tab" onclick="switchAdminTab('users',this)">👥 Users</button>
+      <button class="admin-tab" onclick="switchAdminTab('kick',this)">👢 Kick</button>
+      <button class="admin-tab" onclick="switchAdminTab('bans',this)">🚫 Bans</button>
+      <button class="admin-tab" onclick="switchAdminTab('messages',this)">💬 Messages</button>
+      <button class="admin-tab" onclick="switchAdminTab('channels',this)">📢 Channels</button>
     </div>
     <div class="admin-body" id="adminBody"></div>
   </div>
@@ -434,9 +436,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);height:100vh
 //    Subject: "Your Chat App verification code"
 //    Body: see README below
 // 4. Account → API Keys → copy Public Key here
-const EJS_SERVICE  = 'service_sd1uyks';
-const EJS_TEMPLATE = 'template_vttzaoa';
-const EJS_PUBKEY   = '_0xvmztDM9lb75mZv';
+const EJS_SERVICE  = 'YOUR_SERVICE_ID';
+const EJS_TEMPLATE = 'YOUR_TEMPLATE_ID';
+const EJS_PUBKEY   = 'YOUR_PUBLIC_KEY';
 emailjs.init(EJS_PUBKEY);
 
 let pendingEmail = '';
@@ -1318,6 +1320,44 @@ window.saveBio = function(){
 };
 
 // ── ADMIN PANEL ──
+
+// Bans stored in Firebase under /bans/{username}
+async function getBannedList(){
+  const snap = await get(ref(db, 'bans'));
+  const banned = {};
+  if(snap.exists()) snap.forEach(c=>{ banned[c.key] = c.val(); });
+  return banned;
+}
+
+// Check ban on entry - call after enterChat
+async function checkBanStatus(){
+  const snap = await get(ref(db, `bans/${myName.replace(/\s/g,'_')}`));
+  if(snap.exists()){
+    const ban = snap.val();
+    document.getElementById('appUI').style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('stepEmail').style.display = 'none';
+    // Show ban screen
+    let banBox = document.getElementById('stepBanned');
+    if(!banBox){
+      banBox = document.createElement('div');
+      banBox.id = 'stepBanned';
+      banBox.className = 'login-box';
+      banBox.style.cssText = 'border-color:#ef4444;text-align:center';
+      document.getElementById('loginScreen').appendChild(banBox);
+    }
+    banBox.style.display = 'flex';
+    banBox.style.flexDirection = 'column';
+    banBox.innerHTML = `
+      <div style="font-size:40px">🚫</div>
+      <h2 style="color:#ef4444">You are banned</h2>
+      <p style="color:var(--text2)"><strong>Reason:</strong> ${escapeHtml(ban.reason||'No reason given')}</p>
+      <p style="color:var(--text3);font-size:12px">Banned by ${escapeHtml(ban.by||'Admin')} · ${ban.date||''}</p>
+      ${ban.permanent ? '<p style="color:#ef4444;font-size:12px;font-weight:600">This ban is permanent.</p>' : ''}
+    `;
+  }
+}
+
 window.openAdmin = function(){
   if(!ADMIN_USERS.includes(myName)) return;
   document.getElementById('adminOverlay').classList.add('open');
@@ -1330,64 +1370,246 @@ window.switchAdminTab = function(tab, btn){
   btn.classList.add('active');
   renderAdminTab(tab);
 };
+
 function renderAdminTab(tab){
   const body = document.getElementById('adminBody');
+
   if(tab==='overview'){
     const totalUsers = Object.keys(onlineUsers).length;
     const totalMsgs = allMessages.length;
     body.innerHTML = `
       <div class="admin-stat-grid">
-        <div class="admin-stat-card"><div class="admin-stat-num">${totalUsers}</div><div class="admin-stat-label">Online Users</div></div>
-        <div class="admin-stat-card"><div class="admin-stat-num">${totalMsgs}</div><div class="admin-stat-label">Messages (current channel)</div></div>
+        <div class="admin-stat-card"><div class="admin-stat-num">${totalUsers}</div><div class="admin-stat-label">Online Now</div></div>
+        <div class="admin-stat-card"><div class="admin-stat-num">${totalMsgs}</div><div class="admin-stat-label">Messages Loaded</div></div>
         <div class="admin-stat-card"><div class="admin-stat-num">${channels.length}</div><div class="admin-stat-label">Channels</div></div>
-        <div class="admin-stat-card"><div class="admin-stat-num">${dmPartners.length}</div><div class="admin-stat-label">Your DMs</div></div>
+        <div class="admin-stat-card"><div class="admin-stat-num" id="adminBanCount">…</div><div class="admin-stat-label">Total Bans</div></div>
       </div>
-      <div style="font-size:13px;color:var(--text2)">Currently in <strong>#${currentChannel}</strong>. Use the tabs above to manage users and messages.</div>`;
+      <div style="font-size:13px;color:var(--text2);margin-bottom:12px">Currently viewing <strong>#${currentChannel}</strong>. Use tabs to manage the server.</div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px">
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:8px">Quick Actions</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="admin-action-btn" onclick="switchAdminTab('kick',document.querySelectorAll('.admin-tab')[2])">👢 Go to Kick</button>
+          <button class="admin-action-btn danger" onclick="switchAdminTab('bans',document.querySelectorAll('.admin-tab')[3])">🚫 Go to Bans</button>
+          <button class="admin-action-btn danger" onclick="adminClearChannel()">🗑️ Clear #${currentChannel}</button>
+        </div>
+      </div>`;
+    // Load ban count async
+    getBannedList().then(b=>{ const el=document.getElementById('adminBanCount'); if(el) el.textContent=Object.keys(b).length; });
+
   } else if(tab==='users'){
     const users = Object.values(onlineUsers);
-    body.innerHTML = users.length
-      ? users.map(u=>`<div class="admin-user-row">
+    body.innerHTML = `<div style="font-size:11px;color:var(--text3);margin-bottom:10px">${users.length} user(s) currently online</div>` +
+      (users.length ? users.map(u=>`<div class="admin-user-row">
           <div class="avatar" style="width:34px;height:34px;font-size:12px;background:${u.bg||'#dbeafe'};color:${u.fg||'#1d4ed8'}">${getInitials(u.name)}</div>
           <div class="admin-user-info">
             <div class="admin-user-name">${escapeHtml(u.name)}${ADMIN_USERS.includes(u.name)?'&nbsp;<span style="font-size:9px;background:#ef4444;color:#fff;border-radius:4px;padding:0 4px">ADMIN</span>':''}</div>
-            <div class="admin-user-meta">Online now · ${u.bio||'No bio'}</div>
+            <div class="admin-user-meta">Online now · ${escapeHtml(u.bio||'No bio')}</div>
           </div>
-          ${!ADMIN_USERS.includes(u.name)?`<button class="admin-action-btn danger" onclick="adminKick('${escapeHtml(u.name)}')">Kick</button>`:''}
+          ${!ADMIN_USERS.includes(u.name)?`
+            <div style="display:flex;gap:4px">
+              <button class="admin-action-btn" onclick="adminKickUser('${escapeHtml(u.name)}')">👢 Kick</button>
+              <button class="admin-action-btn danger" onclick="adminBanPrompt('${escapeHtml(u.name)}')">🚫 Ban</button>
+            </div>`:''}
         </div>`).join('')
-      : '<div style="color:var(--text3);font-size:13px">No users online.</div>';
+      : '<div style="color:var(--text3);font-size:13px;padding:10px">No users online right now.</div>');
+
+  } else if(tab==='kick'){
+    const users = Object.values(onlineUsers).filter(u=>!ADMIN_USERS.includes(u.name));
+    body.innerHTML = `
+      <div style="font-size:13px;color:var(--text2);margin-bottom:12px">
+        Kick removes a user from their current channel immediately. They can rejoin.
+      </div>
+      ${users.length ? users.map(u=>`<div class="admin-user-row">
+          <div class="avatar" style="width:34px;height:34px;font-size:12px;background:${u.bg||'#dbeafe'};color:${u.fg||'#1d4ed8'}">${getInitials(u.name)}</div>
+          <div class="admin-user-info">
+            <div class="admin-user-name">${escapeHtml(u.name)}</div>
+            <div class="admin-user-meta">Online in #${currentChannel}</div>
+          </div>
+          <button class="admin-action-btn danger" onclick="adminKickUser('${escapeHtml(u.name)}')">👢 Kick</button>
+        </div>`).join('')
+      : '<div style="color:var(--text3);font-size:13px;padding:10px">No kickable users online.</div>'}
+      <div style="margin-top:14px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px">
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:8px">Kick by Username</div>
+        <div style="display:flex;gap:8px">
+          <input id="kickNameInput" class="login-input" style="flex:1" placeholder="Username to kick..." />
+          <button class="admin-action-btn danger" onclick="adminKickByName()">Kick</button>
+        </div>
+      </div>`;
+
+  } else if(tab==='bans'){
+    body.innerHTML = `<div style="font-size:13px;color:var(--text2);margin-bottom:12px">
+      Banned users see a ban screen when they try to log in. Ban is stored permanently in Firebase.
+    </div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:8px">Ban a User</div>
+      <input id="banNameInput" class="login-input" style="margin-bottom:6px" placeholder="Username to ban..." />
+      <input id="banReasonInput" class="login-input" style="margin-bottom:6px" placeholder="Reason (shown to user)..." />
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);margin-bottom:8px;cursor:pointer">
+        <input type="checkbox" id="banPermanent" /> Permanent ban
+      </label>
+      <button class="admin-action-btn danger" style="width:100%;padding:8px" onclick="adminBanExecute()">🚫 Issue Ban</button>
+    </div>
+    <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:8px">Current Bans</div>
+    <div id="banListEl"><div style="color:var(--text3);font-size:13px">Loading…</div></div>`;
+    // Load ban list
+    getBannedList().then(banned=>{
+      const el = document.getElementById('banListEl');
+      if(!el) return;
+      const keys = Object.keys(banned);
+      el.innerHTML = keys.length ? keys.map(k=>{
+        const b = banned[k];
+        return `<div class="admin-user-row" style="align-items:flex-start">
+          <span style="font-size:20px">🚫</span>
+          <div class="admin-user-info">
+            <div class="admin-user-name">${escapeHtml(b.name||k)}</div>
+            <div class="admin-user-meta">Reason: ${escapeHtml(b.reason||'None')} · By ${escapeHtml(b.by||'Admin')} · ${b.date||''}</div>
+            ${b.permanent?'<div style="font-size:10px;color:#ef4444;font-weight:600">PERMANENT</div>':''}
+          </div>
+          <button class="admin-action-btn" onclick="adminUnban('${k}')">Unban</button>
+        </div>`;
+      }).join('') : '<div style="color:var(--text3);font-size:13px;padding:6px">No active bans.</div>';
+    });
+
   } else if(tab==='messages'){
-    const msgs = allMessages.slice().reverse().slice(0,40);
-    body.innerHTML = msgs.length
-      ? msgs.map(m=>`<div class="admin-msg-row">
-          <div>
+    const msgs = allMessages.slice().reverse().slice(0,50);
+    body.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <div style="font-size:13px;color:var(--text2);flex:1">${msgs.length} recent messages in <strong>#${currentChannel}</strong></div>
+        <button class="admin-action-btn danger" onclick="adminClearChannel()">🗑️ Clear Channel</button>
+      </div>` +
+      (msgs.length ? msgs.map(m=>`<div class="admin-msg-row">
+          <div style="flex:1">
             <div class="admin-msg-author">${escapeHtml(m.name)}</div>
-            <div class="admin-msg-text">${m.deleted?'<em style="opacity:.5">Deleted</em>':escapeHtml(m.text||'[media]')}</div>
+            <div class="admin-msg-text">${m.deleted?'<em style="opacity:.5">Deleted</em>':escapeHtml(m.text||'[media/file]')}</div>
             <div class="admin-msg-meta">${m.time||''} · <span class="channel-pill">#${currentChannel}</span></div>
           </div>
-          ${!m.deleted?`<button class="admin-action-btn danger" style="margin-left:auto;flex-shrink:0" onclick="adminDeleteMsg('${m._key}');renderAdminTab('messages')">Delete</button>`:''}
+          <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+            ${!m.deleted?`<button class="admin-action-btn danger" onclick="adminDeleteMsg('${m._key}');setTimeout(()=>renderAdminTab('messages'),300)">Delete</button>`:''}
+            ${!ADMIN_USERS.includes(m.name)?`<button class="admin-action-btn danger" onclick="adminBanPrompt('${escapeHtml(m.name)}')">Ban</button>`:''}
+          </div>
         </div>`).join('')
-      : '<div style="color:var(--text3);font-size:13px">No messages yet.</div>';
+      : '<div style="color:var(--text3);font-size:13px">No messages yet.</div>');
+
   } else if(tab==='channels'){
-    body.innerHTML = `<div style="font-size:13px;color:var(--text2);margin-bottom:12px">Manage channels. Add or remove channels (requires page reload to fully take effect).</div>` +
-      channels.map(c=>`<div class="admin-user-row">
-        <span style="font-size:16px;color:var(--text3)">#</span>
+    body.innerHTML = `
+      <div style="font-size:13px;color:var(--text2);margin-bottom:12px">Add channels or clear/reset existing ones.</div>
+      ${channels.map(c=>`<div class="admin-user-row">
+        <span style="font-size:18px;color:var(--text3)">#</span>
         <div class="admin-user-info"><div class="admin-user-name">${c}</div></div>
-      </div>`).join('') +
-      `<div style="display:flex;gap:8px;margin-top:12px">
+        <div style="display:flex;gap:4px">
+          <button class="admin-action-btn danger" onclick="adminClearSpecificChannel('${c}')">🗑️ Clear</button>
+        </div>
+      </div>`).join('')}
+      <div style="display:flex;gap:8px;margin-top:12px">
         <input id="newChannelInput" class="login-input" style="flex:1" placeholder="new-channel-name" />
-        <button class="admin-action-btn" style="padding:6px 14px" onclick="adminAddChannel()">Add</button>
+        <button class="admin-action-btn" style="padding:6px 14px" onclick="adminAddChannel()">+ Add</button>
       </div>`;
   }
 }
-window.adminKick = function(name){
-  // Remove their presence — they'll see their messages won't send (soft kick via presence removal)
-  // Real kick would require auth; this is a best-effort soft remove
+
+// ── KICK ──
+window.adminKickUser = function(name){
+  if(!confirm(`Kick ${name} from #${currentChannel}?`)) return;
   Object.entries(onlineUsers).forEach(([uid, u])=>{
-    if(u.name===name) remove(ref(db, `presence/${currentChannel}/${uid}`));
+    if(u.name===name){
+      // Write a kick signal they'll detect
+      set(ref(db, `kicks/${uid}`), { by: myName, channel: currentChannel, ts: Date.now() });
+      remove(ref(db, `presence/${currentChannel}/${uid}`));
+    }
   });
-  alert(`${name} has been kicked from the channel.`);
-  renderAdminTab('users');
+  // Post system message
+  push(ref(db, `messages/${currentChannel}`), {
+    name:'🛡️ System', text:`${name} was kicked by an admin.`,
+    time: nowTime(), bg:'#fef2f2', fg:'#ef4444', ts: Date.now(), system: true
+  });
+  renderAdminTab(adminTab);
 };
+
+window.adminKickByName = function(){
+  const name = document.getElementById('kickNameInput').value.trim();
+  if(!name) return;
+  adminKickUser(name);
+  document.getElementById('kickNameInput').value='';
+};
+
+// Listen for own kick signal
+onValue(ref(db, `kicks/${userId}`), snap=>{
+  if(snap.exists()){
+    remove(ref(db, `kicks/${userId}`));
+    alert('You have been kicked from this channel by an admin.');
+    switchChannel('general');
+  }
+});
+
+// ── BAN ──
+window.adminBanPrompt = function(name){
+  const reason = prompt(`Ban reason for ${name}:`);
+  if(reason===null) return; // cancelled
+  const permanent = confirm('Make this a permanent ban? (OK = permanent, Cancel = temporary)');
+  adminIssueBan(name, reason||'No reason given', permanent);
+};
+
+window.adminBanExecute = function(){
+  const name = document.getElementById('banNameInput').value.trim();
+  const reason = document.getElementById('banReasonInput').value.trim();
+  const permanent = document.getElementById('banPermanent').checked;
+  if(!name){ alert('Enter a username to ban.'); return; }
+  adminIssueBan(name, reason||'No reason given', permanent);
+  document.getElementById('banNameInput').value='';
+  document.getElementById('banReasonInput').value='';
+  document.getElementById('banPermanent').checked=false;
+};
+
+function adminIssueBan(name, reason, permanent){
+  const banKey = name.replace(/\s/g,'_');
+  const date = new Date().toLocaleDateString();
+  set(ref(db, `bans/${banKey}`), { name, reason, permanent, by: myName, date, ts: Date.now() });
+  // Also kick them right now if online
+  Object.entries(onlineUsers).forEach(([uid, u])=>{
+    if(u.name===name){
+      set(ref(db, `kicks/${uid}`), { by: myName, channel: currentChannel, banned: true, ts: Date.now() });
+      remove(ref(db, `presence/${currentChannel}/${uid}`));
+    }
+  });
+  push(ref(db, `messages/${currentChannel}`), {
+    name:'🛡️ System', text:`${name} has been banned by an admin.`,
+    time: nowTime(), bg:'#fef2f2', fg:'#ef4444', ts: Date.now(), system: true
+  });
+  alert(`${name} has been banned.`);
+  renderAdminTab(adminTab);
+}
+
+window.adminUnban = function(banKey){
+  if(!confirm(`Unban ${banKey.replace(/_/g,' ')}?`)) return;
+  remove(ref(db, `bans/${banKey}`));
+  setTimeout(()=>renderAdminTab('bans'), 300);
+};
+
+// ── CLEAR CHANNEL ──
+window.adminClearChannel = function(){
+  if(!confirm(`Delete ALL messages in #${currentChannel}? This cannot be undone.`)) return;
+  adminClearSpecificChannel(currentChannel);
+};
+
+window.adminClearSpecificChannel = function(ch){
+  if(!confirm(`Clear all messages in #${ch}? This is permanent.`)) return;
+  remove(ref(db, `messages/${ch}`)).then(()=>{
+    // Post a system message after clearing
+    push(ref(db, `messages/${ch}`), {
+      name:'🛡️ System', text:`Channel #${ch} was cleared by an admin.`,
+      time: nowTime(), bg:'#fef2f2', fg:'#ef4444', ts: Date.now(), system: true
+    });
+    if(ch === currentChannel){
+      document.getElementById('messages').innerHTML='';
+      allMessages=[];
+      messageListeners[ch]=false; // re-enable listener
+      listenToChannel(ch);
+    }
+    alert(`#${ch} has been cleared.`);
+    renderAdminTab(adminTab);
+  });
+};
+
 window.adminAddChannel = function(){
   const name = document.getElementById('newChannelInput').value.trim().toLowerCase().replace(/\s+/g,'-');
   if(!name) return;
