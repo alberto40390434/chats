@@ -956,12 +956,13 @@ window._switchChannel=function(ch){
 
 // ── Messages ──────────────────────────────────────────────────────────────────
 function listenToChannel(ch){
-  if(messageListeners[ch]) return;
-  messageListeners[ch]=true;
-  onChildAdded(ref(db,`messages/${ch}`),snap=>{
+  if(messageListeners[ch]) messageListeners[ch](); // unsubscribe old listener
+  const unsub = onValue(ref(db,`messages/${ch}`),snap=>{
     if(ch!==currentChannel) return;
-    appendMessage(snap.val(),snap.key);
+    document.getElementById('messages').innerHTML='';
+    snap.forEach(child=>appendMessage(child.val(),child.key));
   });
+  messageListeners[ch]=unsub;
 }
 function appendMessage(msg,key){
   if(msg.system){
