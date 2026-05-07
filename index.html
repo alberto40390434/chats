@@ -302,22 +302,57 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);height:100vh
     </div>
   </div>
 
-  <div class="main">
+  <div class="main" style="position:relative">
+  <!-- Chat area -->
+  <div id="chatArea" style="display:flex;flex-direction:column;flex:1;min-width:0;height:100%">
     <div class="chat-header">
       <span style="font-size:16px;color:var(--text2)">#</span>
       <span class="chat-header-name" id="chatTitle">general</span>
       <span class="conn-status conn-online">&#x25CF; live</span>
       <div class="header-call-btns">
-  <button class="shield-btn" id="shieldBtn" onclick="window._openAdmin()">&#x1F6E1; Admin</button>
-  <button class="call-btn" id="gamesBtn" onclick="window._openGames()">🎮 Games</button>
-  <button class="call-btn" id="voiceCallBtn" onclick="window._startCall('voice')">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.01 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/></svg>
-    Voice
-  </button>
-  <button class="call-btn" id="videoCallBtn" onclick="window._startCall('video')">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-    Video
-  </button>
+        <button class="shield-btn" id="shieldBtn" onclick="window._openAdmin()">&#x1F6E1; Admin</button>
+        <button class="call-btn" id="gamesBtn" onclick="window._openGames()">🎮 Games</button>
+        <button class="call-btn" id="voiceCallBtn" onclick="window._startCall('voice')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.01 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/></svg>
+          Voice
+        </button>
+        <button class="call-btn" id="videoCallBtn" onclick="window._startCall('video')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+          Video
+        </button>
+      </div>
+      <span class="chat-header-desc" id="onlineCount"></span>
+    </div>
+    <div class="messages" id="messages"></div>
+    <div style="padding:0 16px 2px"><div class="typing-indicator" id="typingIndicator"></div></div>
+    <div class="input-area">
+      <div class="input-row">
+        <div style="position:relative">
+          <button class="icon-btn" onclick="window._toggleEmojiPicker()">&#x1F60A;</button>
+          <div class="emoji-picker" id="emojiPicker" style="display:none"></div>
+        </div>
+        <textarea class="chat-input" id="chatInput" placeholder="Message #general... (try /admin password)" rows="1"
+          onkeydown="window._handleKey(event)" oninput="window._autoResize(this);window._handleTyping()"></textarea>
+        <button class="send-btn" onclick="window._sendMessage()">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Games area -->
+  <div id="gamesArea" style="display:none;flex-direction:column;flex:1;height:100%;background:var(--bg)">
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg)">
+      <span style="font-size:16px">🎮</span>
+      <span style="font-weight:600;font-size:15px" id="currentGameTitle">Games</span>
+      <input class="games-search" id="gamesSearch" placeholder="Search games..." oninput="window._filterGames(this.value)" style="margin-left:8px"/>
+      <button onclick="window._closeGames()" style="margin-left:auto;background:none;border:none;cursor:pointer;color:var(--text3);font-size:11px;padding:4px 8px;border-radius:6px;transition:background .1s" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='none'">✕ Exit</button>
+    </div>
+    <div style="display:flex;flex:1;overflow:hidden">
+      <div class="games-list" id="gamesList"></div>
+      <div class="game-frame-area" id="gameFrameArea">
+        <div class="game-placeholder"><div>🎮</div>Pick a game from the list!</div>
+      </div>
+    </div>
+  </div>
 </div>
       <span class="chat-header-desc" id="onlineCount"></span>
     </div>
@@ -1236,10 +1271,14 @@ window._openGames = function(){
   _renderGamesList(_gamesFiltered);
   document.getElementById('gamesSearch').value = '';
   document.getElementById('gameFrameArea').innerHTML = '<div class="game-placeholder"><div>🎮</div>Pick a game from the list!</div>';
-  document.getElementById('gamesModal').classList.add('open');
+  document.getElementById('chatArea').style.display = 'none';
+  document.getElementById('gamesArea').style.display = 'flex';
+  document.getElementById('membersPanel').style.display = 'none';
 };
 window._closeGames = function(){
-  document.getElementById('gamesModal').classList.remove('open');
+  document.getElementById('gamesArea').style.display = 'none';
+  document.getElementById('chatArea').style.display = 'flex';
+  document.getElementById('membersPanel').style.display = '';
   document.getElementById('gameFrameArea').innerHTML = '<div class="game-placeholder"><div>🎮</div>Pick a game from the list!</div>';
 };
 window._filterGames = function(q){
