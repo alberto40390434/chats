@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chat App</title>
+<title>Chatting Site</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <style>
@@ -205,6 +205,25 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);height:100vh
 #jitsiFrame{flex:1;border:none;width:100%;background:#111}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#1a1a1a;color:#fff;padding:9px 18px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:all .25s;z-index:9999;white-space:nowrap}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.games-modal{background:var(--bg);border-radius:16px;border:1px solid var(--border);padding:0;width:min(740px,96vw);height:min(620px,90vh);transform:translateY(8px);transition:transform .15s;display:flex;flex-direction:column;overflow:hidden}
+.modal-overlay.open .games-modal{transform:translateY(0)}
+.games-modal-header{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.games-modal-header h3{font-size:14px;font-weight:600;color:var(--text);flex:1}
+.games-search{padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-family:var(--font);font-size:13px;outline:none;width:180px}
+.games-search:focus{border-color:var(--accent)}
+.games-close-btn{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:8px;border:none;background:#fee2e2;color:#991b1b;font-family:var(--font);font-size:12px;font-weight:500;cursor:pointer;transition:opacity .12s}
+.games-close-btn:hover{opacity:.8}
+.games-body{display:flex;flex:1;overflow:hidden}
+.games-list{width:200px;border-right:1px solid var(--border);overflow-y:auto;padding:8px 0;flex-shrink:0}
+.games-list::-webkit-scrollbar{width:4px}
+.games-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.game-item{padding:7px 14px;font-size:12.5px;color:var(--text2);cursor:pointer;border-radius:6px;margin:1px 6px;transition:background .1s,color .1s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.game-item:hover{background:var(--bg3);color:var(--text)}
+.game-item.active{background:var(--accent-light);color:var(--accent);font-weight:500}
+.game-frame-area{flex:1;display:flex;align-items:center;justify-content:center;background:#111;position:relative}
+.game-frame-area iframe{width:100%;height:100%;border:none}
+.game-placeholder{text-align:center;color:#555;font-size:13px}
+.game-placeholder div{font-size:36px;margin-bottom:8px}
 </style>
 </head>
 <body>
@@ -289,16 +308,17 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);height:100vh
       <span class="chat-header-name" id="chatTitle">general</span>
       <span class="conn-status conn-online">&#x25CF; live</span>
       <div class="header-call-btns">
-        <button class="shield-btn" id="shieldBtn" onclick="window._openAdmin()">&#x1F6E1; Admin</button>
-        <button class="call-btn" id="voiceCallBtn" onclick="window._startCall('voice')">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.01 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/></svg>
-          Voice
-        </button>
-        <button class="call-btn" id="videoCallBtn" onclick="window._startCall('video')">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-          Video
-        </button>
-      </div>
+  <button class="shield-btn" id="shieldBtn" onclick="window._openAdmin()">&#x1F6E1; Admin</button>
+  <button class="call-btn" id="gamesBtn" onclick="window._openGames()">🎮 Games</button>
+  <button class="call-btn" id="voiceCallBtn" onclick="window._startCall('voice')">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.01 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/></svg>
+    Voice
+  </button>
+  <button class="call-btn" id="videoCallBtn" onclick="window._startCall('video')">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+    Video
+  </button>
+</div>
       <span class="chat-header-desc" id="onlineCount"></span>
     </div>
     <div class="messages" id="messages"></div>
@@ -1079,7 +1099,170 @@ document.addEventListener('click',e=>{
 window._handleKey=function(e){ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();window._sendMessage();} };
 window._autoResize=function(el){ el.style.height='auto';el.style.height=Math.min(el.scrollHeight,120)+'px'; };
 
+const BASE = 'https://alberto40390434.github.io/Chat-Games/games/';
+const GAMES = [
+  {name:'10 Minutes Till Dawn', url:'10-minutes-till-dawn'},
+  {name:'1v1 LOL', url:'1v1-lol'},
+  {name:'2048', url:'2048'},
+  {name:'A Dark Room', url:'a-dark-room'},
+  {name:'Abandoned', url:'abandoned'},
+  {name:'Abandoned 2', url:'abandoned-2'},
+  {name:'Ages of Conflict', url:'ages-of-conflict'},
+  {name:'Aground', url:'aground'},
+  {name:'Amidst The Sky', url:'amidst-the-sky'},
+  {name:'Another Gentlemans Adventure', url:'another-gentlemans-adventure'},
+  {name:'Awesome Tanks', url:'awesome-tanks'},
+  {name:'Awesome Tanks 2', url:'awesome-tanks-2'},
+  {name:'Babel Tower', url:'babel-tower'},
+  {name:'Basket Random', url:'basket-random'},
+  {name:'Basketball Stars', url:'basketball-stars'},
+  {name:'Bit Life', url:'bit-life'},
+  {name:'Boxing Random', url:'boxing-random'},
+  {name:'Brawl Stars Project Laser', url:'brawl-stars-project-laser'},
+  {name:'Breaklock', url:'breaklock'},
+  {name:'Chrome Dino', url:'chrome-dino'},
+  {name:'Clicker Heroes', url:'clicker-heroes-updated'},
+  {name:'Conway\'s Game of Life', url:'conways-game-of-life'},
+  {name:'Cookie Clicker', url:'cookie-clicker'},
+  {name:'Core Ball', url:'core-ball'},
+  {name:'Crossy Road', url:'crossy-road'},
+  {name:'Cut The Rope', url:'cut-the-rope'},
+  {name:'Doge Miner', url:'doge-miner'},
+  {name:'Doodle Jump', url:'doodle-jump'},
+  {name:'Drift Boss', url:'drift-boss'},
+  {name:'Drive Mad', url:'drive-mad'},
+  {name:'Drive Mad S', url:'drive-mad-s'},
+  {name:'Duck Life 4', url:'duck-life-4'},
+  {name:'Dune!', url:'dune'},
+  {name:'Eggy Car', url:'eggy-car'},
+  {name:'EvoWars', url:'evowars'},
+  {name:'Family Feud', url:'family-feud'},
+  {name:'Fireboy & Watergirl', url:'fireboy-and-watergirl'},
+  {name:'Fireboy & Watergirl 2', url:'fireboy-and-watergirl-2'},
+  {name:'Fireboy & Watergirl 3', url:'fireboy-and-watergirl-3'},
+  {name:'Fireboy & Watergirl 4', url:'fireboy-and-watergirl-4'},
+  {name:'Five Nights at Epsteins', url:'five-nights-at-epsteins'},
+  {name:'Flappy Bird', url:'flappy-bird'},
+  {name:'Friday Night Funkin', url:'friday-night-funkin'},
+  {name:'Geometry Dash Lite', url:'geometry-dash-lite'},
+  {name:'Geometry Dash Remastered', url:'geometry-dash-remastered'},
+  {name:'Geometry Vibes', url:'geometry-vibes'},
+  {name:'Getaway Shootout', url:'getaway-shootout'},
+  {name:'Gons IO', url:'gons-io'},
+  {name:'Gun Spin', url:'gunspin'},
+  {name:'Hextris', url:'hextris'},
+  {name:'Idle Breakout', url:'idle-breakout'},
+  {name:'Incremancer', url:'incremancer'},
+  {name:'Lion Soldiers Vengeance', url:'lion-soldiers-vengeance'},
+  {name:'Maptroid', url:'maptroid'},
+  {name:'Mario', url:'mario-game'},
+  {name:'Monkey Mart', url:'monkey-mart'},
+  {name:'MotoX3M', url:'motox3m'},
+  {name:'N-gon', url:'n-gon'},
+  {name:'N Step Steve 1', url:'n-step-steve-part-1'},
+  {name:'N Step Steve 2', url:'n-step-steve-part-2'},
+  {name:'OvO', url:'ovo'},
+  {name:'Particle Clicker', url:'particle-clicker'},
+  {name:'P.craft', url:'pcraft'},
+  {name:'Planet Life', url:'planet-life'},
+  {name:'Progress Knight Quest', url:'progress-knight-quest'},
+  {name:'Progress Knight Reborn', url:'progress-knight-reborn'},
+  {name:'Pull of War', url:'pull-of-war'},
+  {name:'Reach The Core', url:'reach-the-core'},
+  {name:'Restless Wing Syndrome', url:'restless-wing-syndrome'},
+  {name:'Retro Bowl', url:'retro-bowl'},
+  {name:'Rift Shift', url:'rift-shift'},
+  {name:'Rocket League 2D', url:'rocket-league-2d'},
+  {name:'Rooftop Snipers', url:'rooftop-snipers'},
+  {name:'Rookie Bowman', url:'rookie-bowman'},
+  {name:'Run 3', url:'run-3'},
+  {name:'Sabercut', url:'sabercut'},
+  {name:'Sandspiel', url:'sandspiel'},
+  {name:'Scuba Bear', url:'scuba-bear'},
+  {name:'Shadow Fight', url:'shadow-fight'},
+  {name:'Slice Master', url:'slice-master'},
+  {name:'Slope', url:'slope'},
+  {name:'Smart Ball', url:'smart-ball'},
+  {name:'Smash Karts', url:'smash-karts'},
+  {name:'Soccer Random', url:'soccer-random'},
+  {name:'Station Saturn', url:'station-saturn'},
+  {name:'Stickman Hook', url:'stickman-hook'},
+  {name:'Subway Surfers', url:'subway-surfers'},
+  {name:'Subway Surfers NY', url:'subway-surfers-ny'},
+  {name:'Tanuki Sunset', url:'tanuki-sunset'},
+  {name:'Temple Run 2', url:'temple-run-2'},
+  {name:'The Final Earth', url:'the-final-earth'},
+  {name:'The Treasure', url:'the-treasure'},
+  {name:'There Is No Game', url:'there-is-no-game'},
+  {name:'Tic Tac What', url:'tic-tac-what'},
+  {name:'Time Shooter', url:'time-shooter'},
+  {name:'Time Shooter 3', url:'time-shooter-3'},
+  {name:'Tiny Fishing', url:'tiny-fishing'},
+  {name:'Trace', url:'trace'},
+  {name:'Tunnel Rush', url:'tunnel-rush'},
+  {name:'Two Ball 3D', url:'two-ball-3d'},
+  {name:'Vex 3', url:'vex-3'},
+  {name:'Vex 4', url:'vex-4'},
+  {name:'Vex 5', url:'vex-5'},
+  {name:'Vex 6', url:'vex-6'},
+  {name:'Vex 7', url:'vex-7'},
+  {name:'Volley Random', url:'volley-random'},
+  {name:'Web OSU', url:'web-osu'},
+  {name:'Where Is The Water', url:'where-is-the-water'},
+  {name:'X Trench Run', url:'x-trench-run'},
+  {name:'Yohoho', url:'yohoho'},
+].sort((a,b)=>a.name.localeCompare(b.name));
+
+let _gamesFiltered = [...GAMES];
+
+window._openGames = function(){
+  _gamesFiltered = [...GAMES];
+  _renderGamesList(_gamesFiltered);
+  document.getElementById('gamesSearch').value = '';
+  document.getElementById('gameFrameArea').innerHTML = '<div class="game-placeholder"><div>🎮</div>Pick a game from the list!</div>';
+  document.getElementById('gamesModal').classList.add('open');
+};
+window._closeGames = function(){
+  document.getElementById('gamesModal').classList.remove('open');
+  document.getElementById('gameFrameArea').innerHTML = '<div class="game-placeholder"><div>🎮</div>Pick a game from the list!</div>';
+};
+window._filterGames = function(q){
+  _gamesFiltered = GAMES.filter(g => g.name.toLowerCase().includes(q.toLowerCase()));
+  _renderGamesList(_gamesFiltered);
+};
+function _renderGamesList(list){
+  document.getElementById('gamesList').innerHTML = list.map((g,i) =>
+    `<div class="game-item" onclick="window._loadGame(${i},this)">${g.name}</div>`
+  ).join('');
+}
+window._loadGame = function(idx, el){
+  document.querySelectorAll('.game-item').forEach(e => e.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('gameFrameArea').innerHTML =
+    `<iframe src="${BASE}${_gamesFiltered[idx].url}" allow="fullscreen" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-pointer-lock"></iframe>`;
+};
+document.getElementById('gamesModal').addEventListener('click', function(e){
+  if(e.target === this) window._closeGames();
+});
+  
 renderLoginColors();
 </script>
+  <!-- Games Modal -->
+<div class="modal-overlay" id="gamesModal">
+  <div class="games-modal">
+    <div class="games-modal-header">
+      <span>🎮</span>
+      <h3>Games</h3>
+      <input class="games-search" id="gamesSearch" placeholder="Search games..." oninput="window._filterGames(this.value)"/>
+      <button class="games-close-btn" onclick="window._closeGames()">✕ Close</button>
+    </div>
+    <div class="games-body">
+      <div class="games-list" id="gamesList"></div>
+      <div class="game-frame-area" id="gameFrameArea">
+        <div class="game-placeholder"><div>🎮</div>Pick a game from the list!</div>
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
